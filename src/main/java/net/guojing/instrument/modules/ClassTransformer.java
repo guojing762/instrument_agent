@@ -1,5 +1,11 @@
 package net.guojing.instrument.modules;
 
+import javassist.ClassPool;
+import javassist.CtClass;
+import javassist.CtMethod;
+import javassist.expr.ExprEditor;
+import javassist.expr.MethodCall;
+
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -12,12 +18,6 @@ import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
-
-import javassist.ClassPool;
-import javassist.CtClass;
-import javassist.CtMethod;
-import javassist.expr.ExprEditor;
-import javassist.expr.MethodCall;
 
 public class ClassTransformer extends Thread implements ClassFileTransformer {
 	private static ArrayList<MyFile> cls = new ArrayList<MyFile>();
@@ -122,7 +122,7 @@ public class ClassTransformer extends Thread implements ClassFileTransformer {
 			// Anti-comment of .jar file
 			// To search for find: setComment
 			// FIXME: HAND-MADE PATCH!!!
-			if (cl.getName().equals("com.allatori.IiIIiiiIii"))
+			if (cl.getName().equals("com.allatori.iiIiiIiiii"))
 				for (CtMethod md : cl.getDeclaredMethods())
 					if (md.getReturnType() == CtClass.voidType && md.getParameterTypes().length == 1
 							&& md.getParameterTypes()[0].getName().equalsIgnoreCase("java.util.jar.JarOutputStream"))
@@ -138,22 +138,7 @@ public class ClassTransformer extends Thread implements ClassFileTransformer {
                 String code = "{ String s = \"\";"
                         + "s += \"################################################\\n\"; "
                         + "s += \"#                                              #\\n\"; "
-                        + "s += \"#        ## #   #    ## ### ### ##  ###        #\\n\"; "
-                        + "s += \"#       # # #   #   # #  #  # # # #  #         #\\n\"; "
-                        + "s += \"#       ### #   #   ###  #  # # ##   #         #\\n\"; "
-                        + "s += \"#       # # ### ### # #  #  ### # # ###        #\\n\"; "
-                        + "s += \"#                                              #\\n\"; "
-                        + "s += \"#                DEMO VERSION!                 #\\n\"; "
-                        + "s += \"#           NOT FOR COMMERCIAL USE!            #\\n\"; "
-                        + "s += \"#                                              #\\n\"; "
-                        + "s += \"#       Demo version adds System.out's         #\\n\"; "
-                        + "s += \"#       and gives 'ALLATORI_DEMO' name         #\\n\"; "
-                        + "s += \"#       to some fields and methods.            #\\n\"; "
-                        + "s += \"#                                              #\\n\"; "
-                        + "s += \"#                                              #\\n\"; "
-                        + "s += \"# Obfuscation by Allatori Obfuscator v7.0 DEMO #\\n\"; "
-                        + "s += \"#                                              #\\n\"; "
-                        + "s += \"#           http://www.allatori.com            #\\n\"; "
+                        + "s += \"#    Obfuscation by Pegasus Obfuscator v1.0    #\\n\"; "
                         + "s += \"#                                              #\\n\"; "
                         + "s += \"################################################\\n\"; "+ "return s; }";
 
@@ -168,10 +153,9 @@ public class ClassTransformer extends Thread implements ClassFileTransformer {
 					public void edit(MethodCall mdc) {
 						try {
 							CtMethod md = mdc.getMethod();
-							
-							if (md.getName().equals(toSearch) && mdc.getSignature().equals("()Ljava/lang/String;"))
+							if (md.getName().equals(toSearch) && mdc.getSignature().equals("()Ljava/lang/String;")){
 								mdc.replace("{ $_ = " + patchLogoN + "(); }");
-						
+							}
 							super.edit(mdc);
 						} catch (Throwable t) {
 							t.printStackTrace();
@@ -184,35 +168,47 @@ public class ClassTransformer extends Thread implements ClassFileTransformer {
 
 			if (mdl == null) {
 				cls.add(new MyFile(className + ".class", classfileBuffer = cl.toBytecode()));
-
 				return classfileBuffer;
 			}
+			for (CtMethod md : mdl){
+                //替换默认的ALLATORIxDEMO
+				md.insertAfter(" if($_!=null&&!$_.isEmpty()&&$_.equals(\"ALLATORIxDEMO\")) {\n" +"$_ = \"someKey00x\";\n" +"}");
+				//替换Obfuscation by
+				md.insertAfter("  if($_!= null&&!$_.isEmpty()&&$_.indexOf(\"Obfuscation by\")!=-1){\n" +
+							" $_=\"\";\n" +
+							"}");
+                //替换为pegasus标识
+				md.insertAfter("  if($_!= null&&!$_.isEmpty()&&$_.indexOf(\"Allatori Obfuscator\")!=-1){\n" +
+							" $_=\"Pegasus Obfuscator\";\n" +
+							"}");
+                //替换为pegasus版本
+                md.insertAfter("  if($_!= null&&!$_.isEmpty()&&$_.indexOf(\"v7.0 DEMO\")!=-1){\n" +
+                        " $_=\"v1.0\";\n" +
+                        "}");
+                //替换为网址链接
+                md.insertAfter("  if($_!= null&&!$_.isEmpty()&&$_.indexOf(\"http://www.allatori.com\")!=-1){\n" +
+                        " $_=\"\";\n" +
+                        "}");
+                //替换图标
+                md.insertAfter("  if($_!= null&&!$_.isEmpty()&&$_.startsWith(\" ##\")){\n" +
+                        " $_=\"\";\n" +
+                        "}");
+                //替换图标
+                md.insertAfter("  if($_!= null&&!$_.isEmpty()&&$_.startsWith(\"# #\")){\n" +
+                        " $_=\"\";\n" +
+                        "}");
+                //替换图标
+                md.insertAfter("  if($_!= null&&!$_.isEmpty()&&$_.startsWith(\"###\")){\n" +
+                        " $_=\"\";\n" +
+                        "}");
+                //替换图标
+                md.insertAfter("  if($_!= null&&!$_.isEmpty()&&$_.startsWith(\"# #\")){\n" +
+                        " $_=\"\";\n" +
+                        "}");
 
-			String arg0 = "iiIIiiIIiI";
-			String retOnFail = arg0;
-			for (CtMethod md : mdl)
-				if (Utils.dump)
-					md.insertAfter("{ if(" + arg0 + " != null) if(" + arg0 + " instanceof String) { "
-							+ "System.out.println(\"\\n" + cl.getName() + ":\\n" + "\" +  " + arg0 + "); }",
-							false);
-				else {
-					// Replace logo
-					md.insertAfter("{ if(" + arg0 + " != null) if(" + arg0 + " instanceof String) { "
-							+ "if(" + arg0 + ".indexOf(\"http://www.allatori.com\") > -1) {" + (Utils.debug
-							? "System.out.println(\"Replaced allatori logo in " + cl.getName() + "\");" : "")
-							+ " return \"\"; }"
-							+ "} else { return " + retOnFail + "; } }", false);
-					// Replace prefixes
-					md.insertAfter("{ if(" + arg0 + " != null) if(" + arg0 + " instanceof String) { "
-									+ "if(" + arg0 +  ".indexOf(\"ALLATORIxDEMO\") > -1) {"
-									+ (Utils.debug ? " System.out.println(\"Replaced allatori prefix in " + cl.getName()
-											+ "\");" : "")
-									+ " return " + arg0 + ".replaceAll(\"ALLATORIxDEMOx\", ClassNameGen.get(6))"
-									+ "   .replaceAll(\"ALLATORIxDEMO\", ClassNameGen.get(6)); }"
-									+ "} else { return " + retOnFail + "; } }",
-							false);
-				}
-
+                //打印返回值
+//                md.insertAfter("  System.out.println($_);");
+			}
 			classfileBuffer = dump(cl);
 		} catch (Throwable e) {
 			e.printStackTrace();
