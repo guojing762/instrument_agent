@@ -1,0 +1,1 @@
+java -javaagent:myagent-jar-with-dependencies.jar -jar allatori.jar cfg.xml > readed.log
